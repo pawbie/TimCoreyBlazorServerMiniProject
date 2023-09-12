@@ -1,0 +1,24 @@
+﻿@page "/Registry"
+@inject IApiClient apiClient
+@inject NavigationManager navManager
+
+<h3>PersonRegistry</h3>
+
+<button class="btn btn-primary" @onclick=@( () => navManager.NavigateTo("/Person/New")) >New</button>
+<div class="row mb-4"></div>
+<div class="list-group">
+    @foreach (var item in persons)
+    {
+        <a class="list-group-item list-group-item-action" href=@string.Concat("/Person/" + item.Id)>@item.DisplayName()</a>
+    }
+</div>
+
+
+@code {
+    private List<PersonInformation> persons = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        persons = await apiClient.Person.GetAll();
+    }
+}

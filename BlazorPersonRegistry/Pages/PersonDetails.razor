@@ -1,0 +1,122 @@
+﻿@page "/Person/{personId:int}"
+@page "/Person/New"
+
+@inject IApiClient apiClient
+@inject IObjectMapper mapper
+@inject NavigationManager navManager
+
+<h3>PersonDetails</h3>
+
+@if (PersonId.HasValue == true)
+{
+    <div id="editPerson">
+        <EditForm Model="person" OnValidSubmit="OnEditSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div>
+                <div>
+                    <strong>First Name</strong>
+                    <InputText id="firstName" class="form-text" @bind-Value="person.FirstName" DisplayName="First Name"  disabled="@EditModeDisabled"/>
+                </div>
+                <div>
+                    <strong>Last Name</strong>
+                    <InputText id="lastName" class="form-text" @bind-Value="person.LastName" DisplayName="Last Name" disabled="@EditModeDisabled"/>
+                </div>
+                <div>
+                    <strong>Age</strong>
+                    <InputNumber id="age" class="form-text" @bind-Value="person.Age" DisplayName="Age" disabled="@EditModeDisabled"/>
+                </div>
+            </div>
+            <br>
+            <button type="submit" class="btn btn-primary" hidden="@EditModeDisabled">Save</button>
+            <button class="btn btn-secondary" hidden="@EditModeDisabled" @onclick=@(() => SwitchEditMode())>Cancel</button>
+        </EditForm>
+    </div>
+    @if(EditModeDisabled)
+    {
+        <button class="btn btn-primary" @onclick=@(() => SwitchEditMode())>Edit</button>
+    }
+
+    <div class="row mb-4"></div>
+    <h4>Addresses</h4>
+    <button class="btn btn-primary" @onclick=@( () => navManager.NavigateTo($"/Person/{PersonId.Value}/AddAddress"))>New</button>
+
+    <div class="row mb-4"></div>
+    <div class="list-group">
+        @foreach (var item in addresses)
+        {
+            <a class="list-group-item list-group-item-action">@item.DisplayName()</a>
+        }
+    </div>
+
+
+}
+else
+{
+    <div id="newPerson">
+        <EditForm Model="person" OnValidSubmit="OnCreateSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div>
+                <div>
+                    <strong>First Name</strong>
+                    <InputText id="firstName" class="form-text" @bind-Value="person.FirstName" DisplayName="First Name" />
+                </div>
+                <div>
+                    <strong>Last Name</strong>
+                    <InputText id="lastName" class="form-text" @bind-Value="person.LastName" DisplayName="Last Name" />
+                </div>
+                <div>
+                    <strong>Age</strong>
+                    <InputNumber id="age" class="form-text" @bind-Value="person.Age" DisplayName="Age" />
+                </div>
+            </div>
+            <br>
+            <button type="submit" class="btn btn-primary">Add</button>
+        </EditForm>
+    </div>
+}
+
+
+
+@code {
+    private PersonForm person = new();
+    private List<AddressInformation> addresses = new();
+
+    [Parameter]
+    public int? PersonId { get; set; }
+    public bool EditModeDisabled = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (PersonId.HasValue)
+        {
+            person = mapper.MapTo<PersonInformation, PersonForm>(await apiClient.Person.GetById(PersonId.Value));
+            addresses = await apiClient.Address.GetByPerson(PersonId.Value);
+        }
+    }
+
+    public async void OnCreateSubmit()
+    {
+        var personCreateInfo = mapper.MapTo<PersonForm, PersonCreateInformation>(person);
+
+        await apiClient.Person.Create(personCreateInfo);
+        navManager.NavigateTo("/Registry");
+    }
+
+    public async void OnEditSubmit()
+    {
+        var personUpdateInfo = mapper.MapTo<PersonForm, PersonUpdateInformation>(person);
+
+        person = mapper.MapTo<PersonInformation, PersonForm>(await apiClient.Person.Update(PersonId.Value, personUpdateInfo));
+        await SwitchEditMode();
+
+    }
+
+
+
+    public async Task SwitchEditMode()
+    {
+        EditModeDisabled = !EditModeDisabled;
+    }
+}

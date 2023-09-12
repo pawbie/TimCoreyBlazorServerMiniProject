@@ -1,0 +1,42 @@
+﻿@page "/Person/{personId:int}/AddAddress"
+
+@inject IApiClient apiClient
+@inject IObjectMapper mapper
+@inject NavigationManager navManager
+
+<h3>AddressDetails</h3>
+
+<EditForm Model="address" OnValidSubmit="OnCreateSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div>
+        <div>
+            <strong>City</strong>
+            <InputText id="city" class="form-text" @bind-Value="address.City" DisplayName="City"/>
+        </div>
+        <div>
+            <strong>Street</strong>
+            <InputText id="street" class="form-text" @bind-Value="address.Street" DisplayName="Street" />
+        </div>
+        <div>
+            <strong>Postal Code</strong>
+            <InputText id="age" class="form-text" @bind-Value="address.PostalCode" DisplayName="Postal Code" />
+        </div>
+    </div>
+    <br>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <button class="btn btn-secondary" @onclick=@(() => navManager.NavigateTo($"/Person/{PersonId}"))>Cancel</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int PersonId { get; set; }
+
+    public AddressForm address = new();
+
+    public async void OnCreateSubmit()
+    {
+        await apiClient.Address.AddToPerson(PersonId, mapper.MapTo<AddressForm, AddressCreateInformation>(address));
+        navManager.NavigateTo($"/Person/{PersonId}");
+    }
+}
